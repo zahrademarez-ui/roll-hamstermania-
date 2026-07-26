@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hamster Roll - Maison & Nether Ultimate</title>
+  <style>
+    body {
+      margin: 0; overflow: hidden; background: #3f2314;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none; -webkit-user-select: none; touch-action: manipulation;
+    }
+
+    /* HUD Interface */
+    #ui {
+      position: absolute; top: 12px; left: 12px;
+      color: #1e293b; font-weight: bold; font-size: 14px;
+      background: rgba(255, 255, 255, 0.92); padding: 8px 14px;
+      border-radius: 12px; border: 2px solid #b45309;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3); pointer-events: none; z-index: 10;
+    }
+
+    #jump-hud {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(255, 255, 255, 0.92); padding: 6px 12px;
+      border-radius: 12px; border: 2px solid #0284c7; font-weight: bold;
+      color: #0369a1; z-index: 10; font-size: 13px;
+    }
+
+    #pause-btn {
+      position: absolute; top: 55px; right: 12px;
+      background: rgba(255, 255, 255, 0.92); border: 2px solid #64748b;
+      padding: 6px 12px; border-radius: 10px; cursor: pointer; z-index: 10;
+      font-weight: bold; font-size: 13px;
+    }
+
+    #leaderboard-btn {
+      position: absolute; top: 55px; left: 12px;
+      background: rgba(255, 255, 255, 0.92); border: 2px solid #eab308;
+      padding: 6px 12px; border-radius: 10px; cursor: pointer; z-index: 10;
+      font-weight: bold; font-size: 13px; color: #854d0e;
+    }
+
+    /* NOUVEAU EMPLACEMENT ALERTE BOSS (En haut du hamster / milieu d'écran) */
+    #boss-hud {
+      position: absolute; bottom: 180px; left: 50%; transform: translateX(-50%);
+      background: rgba(185, 28, 28, 0.92); color: white; padding: 6px 16px;
+      border-radius: 20px; border: 2px solid #fecaca; font-weight: bold;
+      font-size: 14px; text-align: center; display: none; z-index: 15;
+      box-shadow: 0 0 15px rgba(220, 38, 38, 0.6); pointer-events: none;
+    }
+
+    #nether-alert {
+      position: absolute; top: 25%; left: 50%; transform: translate(-50%, -50%);
+      color: #ff4500; font-size: 26px; font-weight: 900; text-shadow: 0 0 10px #000;
+      display: none; z-index: 15; text-align: center; pointer-events: none; width: 90%;
+    }
+
+    /* CONTROLES TACTILES POUR TELEPHONE */
+    .mobile-btn {
+      position: absolute; bottom: 20px; width: 65px; height: 65px;
+      border-radius: 50%; background: rgba(255, 255, 255, 0.85);
+      border: 3px solid #b45309; font-size: 24px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 12; touch-action: manipulation;
+    }
+    #btn-left { left: 20px; }
+    #btn-right { left: 95px; }
+    #btn-jump { right: 20px; width: 75px; height: 75px; background: rgba(14, 165, 233, 0.9); border-color: white; color: white; }
+
+    /* MODALES & CLASSEMENT */
+    .modal {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fdfbf7; border: 3px solid #78350f;
+      border-radius: 20px; padding: 16px;
+      text-align: center; color: #b91c1c; display: none;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.4); width: 88%; max-width: 380px; z-index: 20;
+    }
+
+    .modal h1 { margin: 0 0 6px 0; font-size: 19px; font-weight: 800; color: #dc2626; }
+    .modal-stats { color: #451a03; font-size: 13px; margin-bottom: 8px; font-weight: 600; }
+
+    .shop-box {
+      margin: 6px 0; background: #e6f4ea; border-radius: 12px;
+      padding: 6px 8px; border: 1.5px solid #34a853; text-align: left;
+    }
+    .shop-box h3 { margin: 0 0 4px 0; text-align: center; color: #0d652d; font-size: 12px; font-weight: 800; }
+    
+    .shop-item {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 4px; background: white; padding: 4px 8px;
+      border-radius: 8px; border: 1px solid #a8dab5; font-size: 11px; font-weight: bold; color: #1e293b;
+    }
+
+    .shop-btn {
+      background: #0d9488; color: white; border: none; padding: 4px 8px;
+      border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 10px;
+    }
+    .shop-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .leaderboard-list {
+      background: #fff; border-radius: 10px; padding: 8px; border: 1px solid #cbd5e1;
+      max-height: 150px; overflow-y: auto; text-align: left; font-size: 12px; color: #334155; margin-bottom: 8px;
+    }
+    .leaderboard-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #e2e8f0; }
+
+    .btn-restart {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white; border: none; padding: 10px 16px; border-radius: 20px;
+      font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; margin-top: 4px;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="ui">🐹 <span id="scoreText">0</span>m | 🌻 <span id="seedsText">0</span></div>
+  <div id="jump-hud">🦘 Saut : <span id="jumpStatus">PRÊT</span></div>
+  <button id="pause-btn" onclick="togglePause()">⏸️ Pause</button>
+  <button id="leaderboard-btn" onclick="openLeaderboard()">🏆 Top 5</button>
+
+  <div id="nether-alert">🔥 ENTREE DANS LE NETHER ! 🔥</div>
+
+  <!-- NOUVEL EMPLACEMENT : Juste au-dessus du hamster -->
+  <div id="boss-hud">
+    <span id="bossName">🐱 BOSS CHAT ATTACK !</span><br>
+    ❤️ <span id="bossHealth">3</span>/<span id="bossMaxHealth">3</span> | ⏱️ <span id="bossTimer">40</span>s
+  </div>
+
+  <!-- BOUTONS TACTILES POUR TELEPHONES -->
+  <div id="btn-left" class="mobile-btn">◀</div>
+  <div id="btn-right" class="mobile-btn">▶</div>
+  <div id="btn-jump" class="mobile-btn" onclick="triggerJump()">🦘</div>
+
+  <!-- MODALE GAME OVER & SHOP -->
+  <div id="game-over" class="modal">
+    <h1 id="gameOverTitle">CRASH SUR UN OBSTACLE ! 💥</h1>
+    <div class="modal-stats">
+      Distance : <b style="color:#b45309;"><span id="finalScore">0</span>m</b> | Graines : 🌻 <b style="color:#d97706;"><span id="finalSeeds">0</span></b>
+    </div>
+
+    <div class="shop-box">
+      <h3>🛒 BOUTIQUE & SKINS</h3>
+      <div class="shop-item">
+        <span>🧲 Aimant Graines</span>
+        <button id="upgMagnetBtn" class="shop-btn" onclick="buyUpgrade('magnet', 30)">30 🌻</button>
+      </div>
+      <div class="shop-item">
+        <span>⚡ Saut Rapide (3s)</span>
+        <button id="upgJumpBtn" class="shop-btn" onclick="buyUpgrade('jump', 50)">50 🌻</button>
+      </div>
+      <div class="shop-item">
+        <span>🎩 Skin Chapeau Rouge</span>
+        <button id="skinHatBtn" class="shop-btn" onclick="buySkin('hat', 40)">40 🌻</button>
+      </div>
+      <div class="shop-item">
+        <span>👑 Skin Couronne d'Or</span>
+        <button id="skinCrownBtn" class="shop-btn" onclick="buySkin('crown', 80)">80 🌻</button>
+      </div>
+    </div>
+
+    <button class="btn-restart" onclick="restartGame()">🔄 Relancer la Partie !</button>
+  </div>
+
+  <!-- MODALE CLASSEMENT -->
+  <div id="leaderboard-modal" class="modal">
+    <h1>🏆 MEILLEURS SCORES</h1>
+    <div class="leaderboard-list" id="leaderboardContent">
+      <!-- Rempli en JS -->
+    </div>
+    <button class="btn-restart" onclick="closeLeaderboard()">Fermer</button>
+  </div>
+
+  <script>
+    // --- 1. AUDIO ---
+    let audioCtx = null;
+    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    function playSound(type) {
+      initAudio(); if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        if (type === 'jump') { osc.frequency.setValueAtTime(400, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
+        if (type === 'seed') { osc.frequency.setValueAtTime(800, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.08); }
+        if (type === 'hit') { osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime + 0.2); }
+      } catch(e){}
+    }
+
+    // --- 2. SCÈNE ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x3f2314);
+    scene.fog = new THREE.FogExp2(0x3f2314, 0.005);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9); scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); dirLight.position.set(10, 30, 10); scene.add(dirLight);
+
+    const slopeGroup = new THREE.Group();
+    slopeGroup.rotation.x = 0.15;
+    scene.add(slopeGroup);
+
+    const trackWidth = 12;
+    const trackMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const track = new THREE.Mesh(new THREE.BoxGeometry(trackWidth, 0.5, 1000), trackMat);
+    track.position.set(0, -0.25, -450); slopeGroup.add(track);
+
+    const borderMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+    const borderL = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 1000), borderMat); borderL.position.set(-trackWidth/2 - 0.5, -0.2, -450); slopeGroup.add(borderL);
+    const borderR = new THREE.Mesh(new THREE.BoxGeometry(1, 0.6, 1000), borderMat); borderR.position.set(trackWidth/2 + 0.5, -0.2, -450); slopeGroup.add(borderR);
+
+    // --- 3. PLAYER & SKINS ---
+    const playerGroup = new THREE.Group(); slopeGroup.add(playerGroup);
+
+    const bubbleMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(1.0, 32, 32),
+      new THREE.MeshPhysicalMaterial({ color: 0xffffff, transmission: 0.9, opacity: 0.9, transparent: true, roughness: 0.1 })
+    );
+    playerGroup.add(bubbleMesh);
+
+    const hamsterGroup = new THREE.Group();
+    const bodyMesh = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+    bodyMesh.scale.set(1, 0.9, 1.1); hamsterGroup.add(bodyMesh);
+
+    const earMat = new THREE.MeshStandardMaterial({ color: 0xb45309 });
+    const earL = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), earMat); earL.position.set(-0.35, 0.45, -0.1); hamsterGroup.add(earL);
+    const earR = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), earMat); earR.position.set(0.35, 0.45, -0.1); hamsterGroup.add(earR);
+
+    const hatMesh = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+    hatMesh.position.set(0, 0.7, 0); hatMesh.visible = false; hamsterGroup.add(hatMesh);
+
+    const crownMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 0.3, 6), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+    crownMesh.position.set(0, 0.75, 0); crownMesh.visible = false; hamsterGroup.add(crownMesh);
+
+    playerGroup.add(hamsterGroup); playerGroup.position.set(0, 1.0, 0);
+
+    // --- 4. BOSS CHAT & BOSS GHAST ---
+    const catBoss = new THREE.Group(); catBoss.position.set(0, 3.5, -45); catBoss.visible = false; slopeGroup.add(catBoss);
+    const catHead = new THREE.Mesh(new THREE.SphereGeometry(3.0, 16, 16), new THREE.MeshStandardMaterial({ color: 0x334155 })); catBoss.add(catHead);
+    const catEarL = new THREE.Mesh(new THREE.ConeGeometry(1.0, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x1e293b })); catEarL.position.set(-1.8, 2.5, 0); catBoss.add(catEarL);
+    const catEarR = new THREE.Mesh(new THREE.ConeGeometry(1.0, 1.8, 4), new THREE.MeshStandardMaterial({ color: 0x1e293b })); catEarR.position.set(1.8, 2.5, 0); catBoss.add(catEarR);
+
+    const ghastBoss = new THREE.Group(); ghastBoss.position.set(0, 4.0, -45); ghastBoss.visible = false; slopeGroup.add(ghastBoss);
+    const ghastBody = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3.5, 3.5), new THREE.MeshStandardMaterial({ color: 0xf8fafc })); ghastBoss.add(ghastBody);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+    const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.1), eyeMat); eyeL.position.set(-0.9, 0.4, 1.8); ghastBoss.add(eyeL);
+    const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.1), eyeMat); eyeR.position.set(0.9, 0.4, 1.8); ghastBoss.add(eyeR);
+    for (let i = -1.2; i <= 1.2; i += 0.8) {
+      const tentacle = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.8, 0.3), new THREE.MeshStandardMaterial({ color: 0xe2e8f0 }));
+      tentacle.position.set(i, -2.2, 0); ghastBoss.add(tentacle);
+    }
+
+    // --- 5. OBSTACLES ---
+    const LANES = [-3.8, 0, 3.8];
+
+    function createUHU() {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.5, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+      cap.position.y = 1.1; g.add(body); g.add(cap);
+      return g;
+    }
+
+    function createPen() {
+      const g = new THREE.Group();
+      const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 3.2, 12), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 12), new THREE.MeshStandardMaterial({ color: 0xcbd5e1 }));
+      tip.position.y = 1.8;
+      const fullPen = new THREE.Group(); fullPen.add(pen); fullPen.add(tip); fullPen.rotation.z = Math.PI / 2;
+      g.add(fullPen); return g;
+    }
+
+    function createGomme() {
+      const g = new THREE.Group();
+      const pinkSide = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), new THREE.MeshStandardMaterial({ color: 0xf43f5e }));
+      const blueSide = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.0), new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+      blueSide.position.z = -1.1; g.add(pinkSide); g.add(blueSide);
+      return g;
+    }
+
+    function createCheeseRamp() {
+      const g = new THREE.Group();
+      const shape = new THREE.Shape(); shape.moveTo(0, 0); shape.lineTo(2.2, 0); shape.lineTo(0, 1.4); shape.lineTo(0, 0);
+      const cheese = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 2.0, bevelEnabled: false }), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+      cheese.position.set(-1.0, 0, -1.0); cheese.rotation.y = Math.PI / 2;
+      g.add(cheese); g.isCheeseRamp = true; return g;
+    }
+
+    function createLog() {
+      const g = new THREE.Group();
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2.8, 12), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      log.rotation.z = Math.PI / 2; g.add(log); return g;
+    }
+
+    function createSeed() {
+      const s = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshStandardMaterial({ color: 0x1c1917 }));
+      s.scale.set(0.8, 1.2, 0.8); return s;
+    }
+
+    // ÉTATS DE JEU
+    let gameSpeed = 0.1, distance = 0, seedsCount = 0;
+    let isGameOver = false, isPaused = false, playerX = 0, playerY = 1.0, verticalVelocity = 0, isGrounded = true;
+
+    let hasMagnet = false, jumpCooldownMax = 5.0, canJump = true, jumpCooldownTime = 0;
+    let isNetherActive = false;
+    let activeBoss = null, bossHealth = 3, bossMaxHealth = 3, bossTimer = 40, bossTimerInterval = null;
+    let catDefeated = false, ghastDefeated = false;
+
+    let obstacles = [], seeds = [], projectiles = [];
+
+    function spawnObstacle(zPos) {
+      const randomLane = LANES[Math.floor(Math.random() * LANES.length)];
+      const rand = Math.random();
+      let obs;
+      if (rand < 0.25) obs = createCheeseRamp();
+      else if (rand < 0.45) obs = createUHU();
+      else if (rand < 0.65) obs = createGomme();
+      else if (rand < 0.85) obs = createPen();
+      else obs = createLog();
+
+      obs.position.set(randomLane, 0.7, zPos);
+      slopeGroup.add(obs); obstacles.push(obs);
+    }
+
+    function spawnSeed(zPos) {
+      const randomLane = LANES[Math.floor(Math.random() * LANES.length)];
+      const s = createSeed();
+      s.position.set(randomLane, 0.7, zPos);
+      slopeGroup.add(s); seeds.push(s);
+    }
+
+    for (let z = -40; z > -400; z -= 35) {
+      if (Math.random() > 0.35) spawnObstacle(z); else spawnSeed(z);
+    }
+
+    // CONTROLES TACTILES & CLAVIER
+    let keys = {};
+    window.addEventListener('keydown', (e) => {
+      if(isGameOver || isPaused) return;
+      keys[e.key.toLowerCase()] = true;
+      if (e.code === 'Space') triggerJump();
+    });
+    window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+    // Écouteurs pour boutons mobiles
+    const btnL = document.getElementById('btn-left');
+    const btnR = document.getElementById('btn-right');
+    btnL.addEventListener('touchstart', (e) => { e.preventDefault(); keys['arrowleft'] = true; });
+    btnL.addEventListener('touchend', (e) => { e.preventDefault(); keys['arrowleft'] = false; });
+    btnR.addEventListener('touchstart', (e) => { e.preventDefault(); keys['arrowright'] = true; });
+    btnR.addEventListener('touchend', (e) => { e.preventDefault(); keys['arrowright'] = false; });
+
+    function triggerJump() {
+      if (canJump && isGrounded && !isGameOver && !isPaused) {
+        verticalVelocity = 0.27; isGrounded = false; canJump = false;
+        jumpCooldownTime = jumpCooldownMax; playSound('jump');
+      }
+    }
+
+    function togglePause() {
+      if (isGameOver) return;
+      isPaused = !isPaused;
+      document.getElementById('pause-btn').innerText = isPaused ? "▶️ Reprendre" : "⏸️ Pause";
+      if(!isPaused) animate();
+    }
+
+    // --- GESTION DU CLASSEMENT ---
+    function saveScore(score) {
+      let scores = JSON.parse(localStorage.getItem('hamster_scores') || '[]');
+      scores.push({ date: new Date().toLocaleDateString(), score: Math.floor(score) });
+      scores.sort((a, b) => b.score - a.score);
+      scores = scores.slice(0, 5); // Conserve les 5 meilleurs
+      localStorage.setItem('hamster_scores', JSON.stringify(scores));
+    }
+
+    function openLeaderboard() {
+      const container = document.getElementById('leaderboardContent');
+      let scores = JSON.parse(localStorage.getItem('hamster_scores') || '[]');
+      if(scores.length === 0) {
+        container.innerHTML = "<div>Aucun score enregistré !</div>";
+      } else {
+        container.innerHTML = scores.map((s, i) => `
+          <div class="leaderboard-item">
+            <span>#${i+1} - ${s.date}</span>
+            <b>${s.score}m</b>
+          </div>
+        `).join('');
+      }
+      document.getElementById('leaderboard-modal').style.display = 'block';
+    }
+
+    function closeLeaderboard() {
+      document.getElementById('leaderboard-modal').style.display = 'none';
+    }
+
+    function buyUpgrade(type, cost) {
+      if (seedsCount >= cost) {
+        seedsCount -= cost; document.getElementById('seedsText').innerText = seedsCount;
+        if (type === 'magnet') {
+          hasMagnet = true; document.getElementById('upgMagnetBtn').innerText = "✅ OK";
+          document.getElementById('upgMagnetBtn').disabled = true;
+        } else if (type === 'jump') {
+          jumpCooldownMax = 3.0; document.getElementById('upgJumpBtn').innerText = "✅ OK";
+          document.getElementById('upgJumpBtn').disabled = true;
+        }
+      }
+    }
+
+    function buySkin(type, cost) {
+      if (seedsCount >= cost) {
+        seedsCount -= cost; document.getElementById('seedsText').innerText = seedsCount;
+        if (type === 'hat') {
+          hatMesh.visible = true; crownMesh.visible = false;
+          document.getElementById('skinHatBtn').innerText = "ÉQUIPÉ ✅";
+        } else if (type === 'crown') {
+          crownMesh.visible = true; hatMesh.visible = false;
+          document.getElementById('skinCrownBtn').innerText = "ÉQUIPÉ ✅";
+        }
+      }
+    }
+
+    function activateNetherTheme() {
+      isNetherActive = true;
+      scene.background.setHex(0x2a0808);
+      scene.fog.color.setHex(0x2a0808);
+      trackMat.color.setHex(0x500b0b);
+      borderMat.color.setHex(0xd97706);
+
+      const alert = document.getElementById('nether-alert');
+      alert.style.display = 'block';
+      setTimeout(() => alert.style.display = 'none', 3000);
+    }
+
+    function startBossFight(type) {
+      activeBoss = type;
+      bossTimer = 40;
+      
+      if (type === 'cat') {
+        bossHealth = 3; bossMaxHealth = 3; catBoss.visible = true;
+        document.getElementById('bossName').innerText = "🐱 BOSS CHAT ATTACK !";
+      } else {
+        bossHealth = 5; bossMaxHealth = 5; ghastBoss.visible = true;
+        document.getElementById('bossName').innerText = "👻 BOSS GHAST ATTACK !";
+      }
+
+      document.getElementById('boss-hud').style.display = 'block';
+      document.getElementById('bossHealth').innerText = bossHealth;
+      document.getElementById('bossMaxHealth').innerText = bossMaxHealth;
+      document.getElementById('bossTimer').innerText = bossTimer;
+
+      bossTimerInterval = setInterval(() => {
+        if (!isGameOver && !isPaused && activeBoss) {
+          bossTimer--;
+          document.getElementById('bossTimer').innerText = bossTimer;
+          if (bossTimer <= 0) {
+            clearInterval(bossTimerInterval);
+            triggerGameOver();
+          }
+        }
+      }, 1000);
+    }
+
+    function shootProjectile() {
+      const proj = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+      proj.position.copy(playerGroup.position);
+      slopeGroup.add(proj); projectiles.push(proj);
+    }
+
+    // BOUCLE PRINCIPALE
+    function animate() {
+      if (!isGameOver && !isPaused) {
+        requestAnimationFrame(animate);
+
+        let moveX = 0;
+        if (keys['arrowleft'] || keys['q'] || keys['a']) moveX -= 0.18;
+        if (keys['arrowright'] || keys['d']) moveX += 0.18;
+
+        playerX += moveX; playerX = Math.max(-4.2, Math.min(4.2, playerX));
+        playerGroup.position.x += (playerX - playerGroup.position.x) * 0.2;
+
+        bubbleMesh.rotation.x -= gameSpeed * 0.5;
+        hamsterGroup.rotation.z = -(playerX - playerGroup.position.x) * 0.6;
+
+        if (!isGrounded) {
+          playerY += verticalVelocity; verticalVelocity -= 0.012;
+          if (playerY <= 1.0) { playerY = 1.0; isGrounded = true; verticalVelocity = 0; }
+        }
+        playerGroup.position.y = playerY;
+
+        if (!canJump) {
+          jumpCooldownTime -= 0.016;
+          if (jumpCooldownTime <= 0) {
+            canJump = true; document.getElementById('jumpStatus').innerText = "PRÊT"; document.getElementById('jumpStatus').style.color = "#0369a1";
+          } else {
+            document.getElementById('jumpStatus').innerText = jumpCooldownTime.toFixed(1) + "s"; document.getElementById('jumpStatus').style.color = "#dc2626";
+          }
+        }
+
+        distance += gameSpeed * 1.5;
+        document.getElementById('scoreText').innerText = Math.floor(distance);
+
+        if (distance >= 500 && !activeBoss && !catDefeated) startBossFight('cat');
+        if (distance >= 800 && !isNetherActive) activateNetherTheme();
+        if (distance >= 1000 && !activeBoss && !ghastDefeated) startBossFight('ghast');
+
+        camera.position.set(playerGroup.position.x * 0.2, playerGroup.position.y + 3.8, playerGroup.position.z + 7.5);
+        camera.lookAt(playerGroup.position.x * 0.2, playerGroup.position.y, playerGroup.position.z - 5);
+
+        // Projectiles
+        for (let i = projectiles.length - 1; i >= 0; i--) {
+          let p = projectiles[i]; p.position.z -= 2.0;
+          let targetGroup = activeBoss === 'cat' ? catBoss : ghastBoss;
+
+          if (activeBoss && p.position.z <= targetGroup.position.z + 1.5) {
+            bossHealth -= 1; playSound('hit');
+            document.getElementById('bossHealth').innerText = bossHealth;
+            slopeGroup.remove(p); projectiles.splice(i, 1);
+
+            if (bossHealth <= 0) {
+              if (activeBoss === 'cat') catDefeated = true; else ghastDefeated = true;
+              activeBoss = null; catBoss.visible = false; ghastBoss.visible = false;
+              clearInterval(bossTimerInterval);
+              document.getElementById('boss-hud').style.display = 'none';
+              seedsCount += 100; document.getElementById('seedsText').innerText = seedsCount;
+            }
+          } else if (p.position.z < -100) { slopeGroup.remove(p); projectiles.splice(i, 1); }
+        }
+
+        // Obstacles
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          let obs = obstacles[i]; obs.position.z += gameSpeed * 10;
+
+          if (playerGroup.position.distanceTo(obs.position) < 1.5) {
+            if (obs.isCheeseRamp) {
+              if(!obs.hasTriggered) {
+                obs.hasTriggered = true;
+                verticalVelocity = 0.6; isGrounded = false;
+                if (activeBoss) shootProjectile();
+              }
+            } else if (playerY < 1.5) {
+              triggerGameOver();
+            }
+          }
+
+          if (obs.position.z > 10) {
+            slopeGroup.remove(obs); obstacles.splice(i, 1);
+            spawnObstacle(-400);
+          }
+        }
+
+        // Graines
+        for (let i = seeds.length - 1; i >= 0; i--) {
+          let s = seeds[i]; s.position.z += gameSpeed * 10;
+
+          if (hasMagnet && playerGroup.position.distanceTo(s.position) < 7.0) {
+            s.position.x += (playerGroup.position.x - s.position.x) * 0.2;
+            s.position.z += (playerGroup.position.z - s.position.z) * 0.2;
+          }
+
+          if (playerGroup.position.distanceTo(s.position) < 1.2) {
+            playSound('seed'); slopeGroup.remove(s); seeds.splice(i, 1); seedsCount++;
+            document.getElementById('seedsText').innerText = seedsCount; spawnSeed(-400);
+          } else if (s.position.z > 10) { slopeGroup.remove(s); seeds.splice(i, 1); spawnSeed(-400); }
+        }
+
+        renderer.render(scene, camera);
+      }
+    }
+
+    function triggerGameOver() {
+      isGameOver = true;
+      clearInterval(bossTimerInterval);
+      saveScore(distance);
+      document.getElementById('boss-hud').style.display = 'none';
+      document.getElementById('finalScore').innerText = Math.floor(distance);
+      document.getElementById('finalSeeds').innerText = seedsCount;
+      document.getElementById('game-over').style.display = 'block';
+    }
+
+    function restartGame() {
+      obstacles.forEach(o => slopeGroup.remove(o));
+      seeds.forEach(s => slopeGroup.remove(s));
+      projectiles.forEach(p => slopeGroup.remove(p));
+      obstacles = []; seeds = []; projectiles = [];
+
+      playerX = 0; playerY = 1.0; verticalVelocity = 0; isGrounded = true;
+      playerGroup.position.set(0, 1.0, 0);
+      distance = 0; isGameOver = false; isPaused = false;
+      activeBoss = null; catDefeated = false; ghastDefeated = false;
+      isNetherActive = false;
+      catBoss.visible = false; ghastBoss.visible = false;
+
+      scene.background.setHex(0x3f2314);
+      scene.fog.color.setHex(0x3f2314);
+      trackMat.color.setHex(0xfef08a);
+      borderMat.color.setHex(0xf97316);
+
+      document.getElementById('pause-btn').innerText = "⏸️ Pause";
+      document.getElementById('game-over').style.display = 'none';
+      document.getElementById('boss-hud').style.display = 'none';
+
+      for (let z = -40; z > -400; z -= 35) { if (Math.random() > 0.35) spawnObstacle(z); else spawnSeed(z); }
+      animate();
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateUpdateMatrix ? camera.updateUpdateMatrix() : camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
